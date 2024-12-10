@@ -119,12 +119,14 @@ def knn_algo(query, k, doc_embeddings):
 
 # Reranking 外部调用
 def rerank(query, k=k_default):
+    print("---------------- RERANK START ----------------")
     documents_reranked = vo.rerank(query, my_documents, model=rerank_model, top_k=k)
     for r in documents_reranked.results:
         print(f"Document: {r.document[:20]}")
         print(f"Relevance Score: {r.relevance_score}")
         print(f"Index: {r.index}")
         print()
+    print("---------------- RERANK END ----------------")
 
 # 获取最终json结果 给外部调用
 def query_doc(query=query_default, k=k_default, dev=False, dev_len=20, doc_embeddings=None):
@@ -134,11 +136,11 @@ def query_doc(query=query_default, k=k_default, dev=False, dev_len=20, doc_embed
 
     # 使用字典推导式提取每个item的doc和score属性 
     if(dev):
-        print("---------------- FULL LOG ----------------")
+        print("---------------- QUERY DOC START ----------------")
         for doc, score in retrieved_docs_with_scores:
             print(f"Score: {score}, Document: {doc[:dev_len]}")
         print(f"model: {str(embed_model)}, query: {query}, doc size: {str(len(my_documents))}")
-        print("---------------- FULL LOG ----------------")
+        print("---------------- QUERY DOC END ----------------")
     else:
         items_dict = [{'doc': item[0], 'score': item[1]} for item in retrieved_docs_with_scores]
         # 将包含所需属性的字典列表转换为JSON字符串

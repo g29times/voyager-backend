@@ -1,4 +1,4 @@
-import main
+import voyager
 from pymilvus import MilvusClient
 
 # Docs

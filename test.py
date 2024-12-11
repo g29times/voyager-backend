@@ -15,11 +15,11 @@ querys = [
     "元春和迎春的关系如何", # query 2 
     "江辉工作顺利吗?" # 3
 ]
-topic = topics[1]
-query = querys[3]
-top_k = 3
+topic = topics[0]
+query = querys[2]
+top_k = 4
 voyageai = rag.voyager
-# 1 test Voyage
+# 1 test Voyage # 与milvus_demo结论有不同 因这里（掉接口）使用knn_algo，而milvus_demo使用了cosine similarity
 print("Test Voyage Start ---------------- ")
 voyageai.query_doc(topic + query, top_k, True, 20) # local call
 # query_doc() # call by remote client
@@ -27,18 +27,18 @@ voyageai.rerank(topic + query, top_k)
 print("Test Voyage Finish ---------------- ")
 
 
-# 2 test Milvus
+# 2 test Milvus # TODO 与milvus_demo结论有不同 需调查原因
 print("Test Milvus Start ---------------- ")
-# from pymilvus.model.dense import JinaEmbeddingFunction # 768
-# jina_fn = JinaEmbeddingFunction(
-#     model_name="jina-embeddings-v2-base-en", # Defaults to `jina-embeddings-v2-base-en`
-#     api_key="jina_4129a0d4fdd9469785d8a9728c6f4d9fUGPF0NemmXI_uVRHvnfGLImuEoyq"
-# )
-# milvus = Milvus(jina_fn)
-milvus = Milvus() # milvus origin embedding
+from pymilvus.model.dense import JinaEmbeddingFunction
+jina_fn = JinaEmbeddingFunction(
+    model_name="jina-embeddings-v3",
+    api_key="jina_4129a0d4fdd9469785d8a9728c6f4d9fUGPF0NemmXI_uVRHvnfGLImuEoyq"
+)
+milvus = Milvus(jina_fn)
+# milvus = Milvus() # milvus origin embedding
 # 重置数据
-milvus.create_db("literature", 1024)
-milvus.upsert_docs("literature", voyageai.get_my_documents(), "criticism")
+milvus.create_db("literature", 1024) # dimension see db/milvus_demo.py
+milvus.upsert_docs("literature", voyageai.get_my_documents(), "文学评论", "曹雪芹")
 # milvus.create_db("questions", 1024)
 # milvus.upsert_docs("questions", query, "literature")
 # 查询 by id

@@ -1,6 +1,9 @@
 import chromadb
 from chromadb import Documents, EmbeddingFunction, Embeddings
-import main
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import rag.voyager as main
 
 # docs 集成Voyage后，效果不如milvus，原因不明
 # https://docs.trychroma.com/guides#filtering-by-document-contents
@@ -83,12 +86,13 @@ print(collection.count())
 print(collection.get(where={'tag': 'chroma'}))
 
 query = ["元春和迎春的关系如何", 'This is a query document about florida']
-# 查询算法
+# 查询
 results = collection.query(
-    query_texts=[query[1]], # Chroma will embed this for you
-    n_results=4, # how many results to return
+    query_texts=[query[0]], # Chroma will embed this for you
+    n_results=3, # how many results to return
     # A WhereDocument type dict used to filter by the documents. E.g. `{$contains: {"text": "hello"}}` 
     # https://docs.trychroma.com/guides#filtering-by-document-contents
     # where_document={ "$and": [{"$contains":"春"}, {"$not_contains":"李"}] }
 )
+# 贾迎春 贾探春 李纨 集成Voyage后，效果不如milvus
 print(results)

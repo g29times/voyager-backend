@@ -7,13 +7,13 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from util.knn import k_nearest_neighbors
 
 # TODO 
-# 1 隐藏API 
-# 1 加参数可选模型 *
-# 2 LOG日志归档 
-# 3 数据入库PINGCAP
-voyage = voyageai.Client(api_key=os.getenv('VOYAGE_API_KEY'))
-# best: voyage2
-embed_modes=["voyage-large-2-instruct", "voyage-large-2", "voyage-2"]
+    # 1 隐藏API 
+    # 1 加参数可选模型 *
+    # 2 LOG日志归档 
+    # 3 数据入库PINGCAP
+voyage = voyageai.Client(api_key='pa-scV8inhyaVhgvS-_e1PnpJx8EM-54jw_4bnLEZ5H2j8')
+# https://docs.voyageai.com/docs/embeddings
+embed_modes=["voyage-3", "voyage-3-lite", "voyage-multilingual-2"] # 1024 512 1024
 embed_model=embed_modes[2]
 rerank_models=["rerank-1", "rerank-lite-1"]
 rerank_model=rerank_models[1]

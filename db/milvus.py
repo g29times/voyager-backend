@@ -37,7 +37,7 @@ class Milvus:
             collection_name=collection_name,
             dimension=dim,  # The vectors we will use in this demo has 768 dimensions
         )
-        print("create_db ", dim)
+        print("create_db with dimension", dim)
 
     # 2 Represent text
     def encode_documents(self, docs):
@@ -66,10 +66,10 @@ class Milvus:
         print(res)
 
     # Public方法 Update Docs 聚合方法 subject可用于后续partition
-    def upsert_docs(self, collection_name, docs, subject="partition1"):
+    def upsert_docs(self, collection_name, docs, subject="criticism", author="Cao Xue Qin"):
         docs_embeddings = self.encode_documents(docs)
         data = [
-            {"id": i, "vector": docs_embeddings[i], "text": docs[i], "subject": subject, "metadata": {"author": "Cao Xueqin"}}
+            {"id": i, "vector": docs_embeddings[i], "text": docs[i], "subject": subject, "metadata": {"author": author}}
             for i in range(len(docs_embeddings))
         ]
         res = self.client.upsert(collection_name=collection_name, data=data)
@@ -86,7 +86,6 @@ class Milvus:
 
     # Public方法 Semantic Search client.search()是milvus 内部逻辑 默认使用cosine similarity
     def search(self, collection_name, query, limit=3, output_fields=["text"]):
-        # query_vectors = self.embedding_fn.encode_queries(["谁和黛玉关系最好"])
         query_vectors = self.encode_query(query)
 
         res = self.client.search(

@@ -2,31 +2,47 @@ from pymilvus import MilvusClient
 
 client = MilvusClient("milvus_demo.db")
 
-# Voyage 最佳
-from pymilvus.model.dense import VoyageEmbeddingFunction
-embedding_fn = VoyageEmbeddingFunction(
-    model_name="voyage-2", # Defaults to `voyage-2`
-    api_key="pa-ReOQxAJwGywtO4bfpQVnjyJv5uHsqnBTC0ym8DE73Yg"
+# TODO 与Test结论有不同 调查原因 2024-12-12 milvus_demo的代码效果更好
+# DOC https://milvus.io/api-reference/pymilvus/v2.4.x/EmbeddingModels/VoyageEmbeddingFunction/VoyageEmbeddingFunction.md
+# 元春和迎春的关系如何
+# Jina work 贾元春 贾迎春 贾探春 贾宝玉
+from pymilvus.model.dense import JinaEmbeddingFunction # 1024
+embedding_fn = JinaEmbeddingFunction(
+    model_name="jina-embeddings-v3",
+    api_key="jina_4129a0d4fdd9469785d8a9728c6f4d9fUGPF0NemmXI_uVRHvnfGLImuEoyq"
 )
-# from pymilvus.model.hybrid import BGEM3EmbeddingFunction # local model size 8G speed slow
-# embedding_fn = BGEM3EmbeddingFunction(
-#     model_name='BAAI/bge-m3', # Specify the model name
-#     device='cpu', # Specify the device to use, e.g., 'cpu' or 'cuda:0'
-#     use_fp16=False # Specify whether to use fp16. Set to `False` if `device` is `cpu`.
-# )
-# from pymilvus.model.dense import JinaEmbeddingFunction # 768
-# embedding_fn = JinaEmbeddingFunction(
-#     model_name="jina-embeddings-v2-base-en", # Defaults to `jina-embeddings-v2-base-en`
-#     api_key="jina_4129a0d4fdd9469785d8a9728c6f4d9fUGPF0NemmXI_uVRHvnfGLImuEoyq"
-# )
-# from pymilvus.model.dense import CohereEmbeddingFunction # 384
+# Cohere work 贾元春 贾迎春 贾宝玉 袭人
+# from pymilvus.model.dense import CohereEmbeddingFunction # 1024
 # embedding_fn = CohereEmbeddingFunction(
-#     model_name="embed-english-light-v3.0",
+#     model_name="embed-multilingual-v3.0",
 #     api_key="eoIhZt6kPWHtyfkdvsY7S14JEqIV1igjn8ymJDoX",
 #     input_type="search_document",
 #     embedding_types=["float"]
 # )
+# Voyage work voyage-multilingual-2(1024) 贾元春 贾迎春 贾宝玉 秦可卿 | voyage-2(1024) 贾元春 贾迎春 李纨 贾探春 | 
+# voyage-3(1024) 贾元春 贾探春 贾宝玉 薛宝钗 | voyage-large-2(1536) 元 宝 迎 惜  | voyage-lite-02-instruct(1024) 元 黛 惜 探
+# from pymilvus.model.dense import VoyageEmbeddingFunction # 1024
+# embedding_fn = VoyageEmbeddingFunction(
+#     model_name="voyage-multilingual-2", # https://docs.voyageai.com/docs/embeddings
+#     api_key="pa-ReOQxAJwGywtO4bfpQVnjyJv5uHsqnBTC0ym8DE73Yg"
+# )
+# bge-m3 not work on some machine
+# from pymilvus.model.hybrid import BGEM3EmbeddingFunction # model size 8G
+# embedding_fn = BGEM3EmbeddingFunction(
+#     model_name='BAAI/bge-m3', # Specify the model name
+#     device='cuda:0', # Specify the device to use, e.g., 'cpu' or 'cuda:0', on cpu speed is very slow
+#     use_fp16=True # Specify whether to use fp16. Set to `False` if `device` is `cpu`.
+# )
+# OpenAI no key
+# from pymilvus.model.dense import OpenAIEmbeddingFunction
+# embedding_fn = OpenAIEmbeddingFunction(
+#     model_name: str = "text-embedding-ada-002", 
+#     api_key: Optional[str] = None,
+#     base_url: Optional[str] = None,
+#     dimensions: Optional[int] = None,
+# )
 
+DIM = 1024
 docs = [
         # "Artificial intelligence was founded as an academic discipline in 1956.",
         # "Alan Turing was the first person to conduct substantial research in AI.",
@@ -65,10 +81,6 @@ docs = [
         "李纨 桃李春风结子完，到头谁似一盆兰；如冰水好空相妒，枉与他人作笑谈。",
         "秦可卿 - 在现实中引领宝玉进入梦境的人。袅娜柔情。情天情海幻情身，情既相逢必主淫；漫言不肖皆荣出，造衅开端实在宁。",
     ]
-# Test
-# docs_embeddings = embedding_fn.encode_documents(docs)
-# print("Embeddings:", docs_embeddings)
-# print("Dim:", embedding_fn.dim, docs_embeddings[0].shape)
 
 # queries = ["When was artificial intelligence founded", 
 #            "Where was Alan Turing born?"]
@@ -76,39 +88,39 @@ docs = [
 # print("Embeddings:", query_embeddings)
 # print("Dim", embedding_fn.dim, query_embeddings[0].shape)
 
-# 1 Represent text
+# 1 Embedding Docs
 docs_embeddings = embedding_fn.encode_documents(docs)
+print("Embeddings:", docs_embeddings)
 print("Dim:", embedding_fn.dim, docs_embeddings[0].shape)
 
 # 2 Build Data 
 # Each entity has id, vector representation, raw text, and a subject label to filtering metadata.
 data = [
-    {"id": i, "vector": docs_embeddings[i], "text": docs[i], "subject": "history"}
+    {"id": i, "vector": docs_embeddings[i], "text": docs[i], "subject": "文学评论", "metadata": {"author": "曹雪芹"}}
     for i in range(len(docs_embeddings))
 ]
 # print("Data has", len(data), "entities, each with fields: ", data[0].keys())
 # print("Vector dim:", len(data[0]["docs_embeddings"]))
 
 # 3 Create db
-if client.has_collection(collection_name="demo_collection"):
-    client.drop_collection(collection_name="demo_collection")
+if client.has_collection(collection_name="literature"):
+    client.drop_collection(collection_name="literature")
 client.create_collection(
-    collection_name="demo_collection",
-    dimension=embedding_fn.dim,  # The vectors we will use in this demo has 768 dimensions
+    collection_name="literature",
+    dimension=DIM,  # The vectors we will use in this demo has 768 dimensions
 )
 
 # 4 Insert Data
-res = client.insert(collection_name="demo_collection", data=data)
+res = client.upsert(collection_name="literature", data=data)
 # print(res)
 
-# Semantic Search
-query_vectors = embedding_fn.encode_queries(["谁和黛玉关系最好"])
-
+# 5 search
+# Embedding Query
+query_vectors = embedding_fn.encode_queries(["元春和迎春的关系如何"])
 res = client.search(
-    collection_name="demo_collection",  # target collection
+    collection_name="literature",  # target collection
     data=query_vectors,  # query vectors
     limit=4,  # number of returned entities
     output_fields=["text", "subject"],  # specifies fields to be returned
 )
 print(res)
-# 黛玉 李纨 贾宝玉 贾迎春

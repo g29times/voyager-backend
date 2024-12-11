@@ -1,14 +1,17 @@
 import voyageai
 import numpy as np
 import json
-from knn import k_nearest_neighbors
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from util.knn import k_nearest_neighbors
 
 # TODO 
 # 1 隐藏API 
 # 1 加参数可选模型 *
 # 2 LOG日志归档 
 # 3 数据入库PINGCAP
-voyage = voyageai.Client(api_key="pa-ReOQxAJwGywtO4bfpQVnjyJv5uHsqnBTC0ym8DE73Yg")
+voyage = voyageai.Client(api_key=os.getenv('VOYAGE_API_KEY'))
 # best: voyage2
 embed_modes=["voyage-large-2-instruct", "voyage-large-2", "voyage-2"]
 embed_model=embed_modes[2]
@@ -87,21 +90,21 @@ def get_my_documents():
 #         embeddings = voyage.embed(self.documents, model=embed_model, input_type="document").embeddings
 #         return embeddings
 
+# 这里是将文档列表转换为嵌入向量的逻辑
 def get_doc_embeddings(documents):
-        print(f"---------------- doc_embeddings `{len(documents)}` ----------------")
-        # 这里是将文档列表转换为嵌入向量的逻辑
-        embeddings = voyage.embed(documents, model=embed_model, input_type="document").embeddings
-        # print(dir(documents_embeddings))
-        # print(len(documents_embeddings))
-        return embeddings
+    print(f"---------------- doc_embeddings `{len(documents)}` ----------------")
+    embeddings = voyage.embed(documents, model=embed_model, input_type="document").embeddings
+    return embeddings
 
+
+# 这里是将查询字符串转换为嵌入向量的逻辑
 def get_query_embedding(query):
     print(f"---------------- query_embedding `{query}` ----------------")
-    # 这里是将查询字符串转换为嵌入向量的逻辑
     embedding = voyage.embed([query], model=embed_model, input_type="query").embeddings[0]
     return embedding
 
-# retrieval
+
+# Retrieval 使用KNN召回 TODO 研究 最终的召回效果是KNN影响的吗?
 def knn_algo(query, k, doc_embeddings):
     # Get the embedding of the query
     # query_embedding = VectorTools(query).get_query_embedding()
@@ -127,6 +130,7 @@ def knn_algo(query, k, doc_embeddings):
     retrieved_docs_with_scores = [(my_documents[index], score) for index, score in zip(retrieved_embd_indices, top_k_scores)]
     return retrieved_docs_with_scores
 
+
 # Reranking 外部调用
 def rerank(query, k=k_default):
     print("---------------- RERANK START ----------------")
@@ -137,6 +141,7 @@ def rerank(query, k=k_default):
         print(f"Index: {r.index}")
         print()
     print("---------------- RERANK END ----------------")
+
 
 # 获取最终json结果 给外部调用
 def query_doc(query=query_default, k=k_default, dev=False, dev_len=20, doc_embeddings=None):
@@ -151,18 +156,17 @@ def query_doc(query=query_default, k=k_default, dev=False, dev_len=20, doc_embed
     retrieved_docs_with_scores = knn_algo(query, k, doc_embeddings)
 
     # 使用字典推导式提取每个item的doc和score属性 
-    if(dev):
+    if(dev): # 开发模式 仅打印
         print("---------------- QUERY DOC START ----------------")
         for doc, score in retrieved_docs_with_scores:
             print(f"Score: {score}, Document: {doc[:dev_len]}")
         print(f"model: {str(embed_model)}, query: {query}, doc size: {str(len(my_documents))}")
         print("---------------- QUERY DOC END ----------------")
-    else:
+    else: # 生产模式 返回json
         items_dict = [{'doc': item[0], 'score': item[1]} for item in retrieved_docs_with_scores]
         # 将包含所需属性的字典列表转换为JSON字符串
         result = {'items': items_dict, 'query': query, 'model': embed_model}
         result_json = json.dumps(result, ensure_ascii=False)
-        
         print("doc size: " + str(len(my_documents)))
         print("model: " + str(embed_model))
         return result_json

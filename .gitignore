@@ -9,3 +9,5 @@ files/temp
 # ignore environment
 .venv
 .env
+.ini
+.log

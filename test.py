@@ -1,28 +1,29 @@
-import voyager
-from gemini import classify
-from milvus import Milvus
+import rag.voyager
+from llm.gemini import classify
+from db.milvus import Milvus
 import json
 import numpy as np
 
 # 测试问题："元春和迎春的关系如何"
 # 测试结论：Voyage+Milvus 比原生Voyage效果好
-# 效果排序：Voyage+Milvus：元 迎 > 原生Voyage：迎 元 > JINA：元 惜 > chroma + Cohere（Rerank）？ > Voyage Rerank 刘心武
-topic = ["红楼梦", "女儿国王"]
+# 效果排序：1 Voyage+Milvus：元 迎 > 2 原生Voyage：迎 元 > 3 JINA：元 惜 > 
+# 4 chroma + Cohere（Rerank）？ > 5 Voyage Rerank 刘心武
+topics = ["红楼梦", "女儿国王"]
 querys = [
     "谁和黛玉关系最好", 
     "一张弓，弓上挂着一个香橼。说的是谁", 
     "元春和迎春的关系如何", # query 2 
     "江辉工作顺利吗?" # 3
 ]
-query = querys[2]
-topic = topic[0]
+topic = topics[1]
+query = querys[3]
 top_k = 3
-
+voyageai = rag.voyager
 # 1 test Voyage
 print("Test Voyage Start ---------------- ")
-voyager.query_doc(topic[0] + query, top_k, True, 20) # local call
+voyageai.query_doc(topic + query, top_k, True, 20) # local call
 # query_doc() # call by remote client
-voyager.rerank(topic[0] + query, top_k)
+voyageai.rerank(topic + query, top_k)
 print("Test Voyage Finish ---------------- ")
 
 
@@ -34,17 +35,10 @@ print("Test Milvus Start ---------------- ")
 #     api_key="jina_4129a0d4fdd9469785d8a9728c6f4d9fUGPF0NemmXI_uVRHvnfGLImuEoyq"
 # )
 # milvus = Milvus(jina_fn)
-# from pymilvus.model.hybrid import BGEM3EmbeddingFunction # local model size 8G speed slow
-# embedding_fn = BGEM3EmbeddingFunction(
-#     model_name='BAAI/bge-m3', # Specify the model name
-#     device='cpu', # Specify the device to use, e.g., 'cpu' or 'cuda:0'
-#     use_fp16=False # Specify whether to use fp16. Set to `False` if `device` is `cpu`.
-# )
-# milvus = Milvus(embedding_fn)
 milvus = Milvus() # milvus origin embedding
 # 重置数据
 milvus.create_db("literature", 1024)
-milvus.upsert_docs("literature", voyager.get_my_documents(), "criticism")
+milvus.upsert_docs("literature", voyageai.get_my_documents(), "criticism")
 # milvus.create_db("questions", 1024)
 # milvus.upsert_docs("questions", query, "literature")
 # 查询 by id

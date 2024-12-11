@@ -1,5 +1,9 @@
-import voyager
 from pymilvus import MilvusClient
+
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import rag.voyager
 
 # Docs
 # 使用 https://milvus.io/api-reference/pymilvus/v2.4.x/MilvusClient/Vector/get.md

@@ -1,0 +1,7 @@
+chromadb==0.5.23
+Flask==3.1.0
+numpy==2.0.2
+protobuf==5.29.1
+pymilvus==2.5.0
+scikit_learn==1.6.0
+voyageai==0.3.2
